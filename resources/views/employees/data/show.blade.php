@@ -1,582 +1,500 @@
 @extends('layouts.admin')
 
 @section('title', 'Detail Karyawan')
-@section('header_icon', 'icon-park-outline--file-staff-one-01')
-@section('content_header', 'Employee Information')
-
-@push('styles')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ asset('css/show.css') }}">
-@endpush
 
 @section('content')
-    <div class="employee-detail-page">
-        <!-- Custom Page Header -->
-        <div class="page-header-container">
-            <h1 class="page-title">
-                Employee Detail : {{ $employee->full_name }}
-            </h1>
-            <div class="page-header-actions d-flex justify-content-between align-items-center">
-            {{-- Back to List hanya untuk superadmin --}}
-            @if(in_array(Auth::user()->role, ['superadmin','hc']))
-                <a href="{{ route('employees.index') }}" class="action-button btn-back">
-                    <i class="fas fa-arrow-left"></i> Back to List
-                </a>
-            @else
-                {{-- Tambahkan elemen kosong agar space-between tetap bekerja --}}
-                <div></div>
-            @endif
 
-            <div class="right-actions d-flex gap-2">
-                <!-- Tombol Deactive -->
-                @if(in_array(Auth::user()->role, ['superadmin','hc']))
-                    <a href="{{ route('employees.deactivate.form', $employee) }}" class="action-button btn-deactivet-data">
-                        <span class="material-symbols--tab-close-inactive"></span> Deactive Employee
-                    </a>
-                @else
-                    <div></div>
-                @endif
-                <!-- Modal Deactive -->
-                {{-- <x-delete-modal 
-                    modalId="deactivate-employee-{{ $employee->id }}" 
-                    :action="route('employees.deactivate', $employee)" 
-                    method="POST" 
-                    title="Deactive Confirmation"
-                    message="Are you sure you want to deactivate this employee?" 
-                    iconClass="tab-close-inactive"
-                /> --}}
-                <a href="{{ route('employees.edit', $employee) }}" class="action-button btn-edit-data">
-                    <i class="fas fa-edit"></i> Edit Employee Data
-                </a>
-                <a href="{{ route('employees.data.edit_login', $employee->id) }}" class="action-button btn-edit-login">
-                    <i class="fas fa-user-cog"></i> Edit Login Account
-                </a>
-            </div>
-        </div>
-        </div>
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+        <i class="fas fa-user-tie fa-fw mr-2"></i>Detail Employee: {{ $employee->full_name }}
+    </h1>
+    
+    <div class="d-flex">
+        @if(in_array(Auth::user()->role, ['superadmin','hc']))
+            <a href="{{ route('employees.index') }}" class="btn btn-secondary btn-sm shadow-sm mr-2">
+                <i class="fas fa-arrow-left fa-sm text-white-50 mr-1"></i> Back
+            </a>
+            
+            <a href="{{ route('employees.deactivate.form', $employee) }}" class="btn btn-danger btn-sm shadow-sm mr-2">
+                <i class="fas fa-ban fa-sm text-white-50 mr-1"></i> Deactivate
+            </a>
+        @endif
 
-        <!-- Main Content (2 Columns) -->
-        <div class="detail-container">
-            <!-- Left Column -->
-            <div class="detail-column left-column">
-                <!-- Employment Data Card -->
-                <div class="detail-card">
-                    <div class="card-header">
-                        <h3 class="card-title"><i class="fas fa-briefcase"></i> Employment Data</h3>
-                    </div>
-                    <div class="card-content">
-                        <div class="data-item">
-                            <span class="data-label">Employee Status</span>
-                            <span class="data-value">
-                                @if ($employee->status == 'Aktif')
-                                    <span class="status-badge status-active">Active</span>
-                                @else
-                                    <span class="status-badge status-inactive">Inactive</span>
-                                @endif
-                            </span>
-                        </div>
-                        <div class="data-item"><span class="data-label">Employment Type</span><span
-                                class="data-value">{{ $employee->employee_type }}</span></div>
-                        <div class="data-item"><span class="data-label">Division</span><span
-                                class="data-value">{{ $employee->division->name ?? 'N/A' }}</span></div>
-                        <div class="data-item">
-                            <span class="data-label">Position</span>
-                            <span class="data-value">{{ $employee->position->title ?? 'N/A' }}</span>
-                        </div>
-                        <div class="data-item"><span class="data-label">Office</span><span
-                                class="data-value">{{ $employee->office }}</span></div>
-                        <div class="data-item">
-                            <span class="data-label">Date Of Entry</span>
-                            <span
-                                class="data-value">{{ $employee->hire_date ? \Carbon\Carbon::parse($employee->hire_date)->format('d F Y') : '-' }}</span>
-                        </div>
-                        <div class="data-item">
-                            <span class="data-label">Exit Date</span>
-                            <span
-                                class="data-value">{{ $employee->separation_date ? \Carbon\Carbon::parse($employee->separation_date)->format('d F Y') : '-' }}</span>
-                        </div>
-                        <div class="data-item">
-                            <span class="data-label">CV File</span>
-                            <span class="data-value">
-                                @if ($employee->cv_file)
-                                    <a href="{{ asset('storage/' . $employee->cv_file) }}" target="_blank"
-                                        class="cv-link"><i class="fas fa-file-alt"></i> Lihat File</a>
-                                @else
-                                    -
-                                @endif
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Login Account Data Card -->
-                <div class="detail-card">
-                    <div class="card-header">
-                        <h3 class="card-title"><i class="fas fa-user-lock"></i> Login Account Data</h3>
-                    </div>
-                    <div class="card-content">
-                        <div class="data-item">
-                            <span class="data-label">Login Name</span>
-                            <span class="data-value">{{ $employee->user->name ?? 'Not Connected' }}</span>
-                        </div>
-                        <div class="data-item">
-                            <span class="data-label">Email Login</span>
-                            <span class="data-value">{{ $employee->user->email ?? '-' }}</span>
-                        </div>
-                        <div class="data-item">
-                        <span class="data-label">Role</span>
-                        <span class="data-value">{{ $employee->user->role ?? '-' }}</span>
-                    </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Column -->
-            <div class="detail-column right-column">
-                <!-- Personal Data Card -->
-                <div class="detail-card">
-                    <div class="card-header">
-                        <h3 class="card-title"><i class="fas fa-id-card"></i> Personal Data</h3>
-                    </div>
-                    <div class="card-content">
-                        <div class="data-item"><span class="data-label">Full Name</span><span
-                                class="data-value">{{ $employee->full_name }}</span></div>
-                        <div class="data-item"><span class="data-label">NIK</span><span
-                                class="data-value">{{ $employee->nik }}</span></div>
-                        <div class="data-item"><span class="data-label">NIP</span><span
-                                class="data-value">{{ $employee->nip ?? '-' }}</span></div>
-                        <div class="data-item"><span class="data-label">NPWP</span><span
-                                class="data-value">{{ $employee->npwp ?? '-' }}</span></div>
-                        <div class="data-item"><span class="data-label">Gender</span><span
-                                class="data-value">{{ $employee->gender }}</span></div>
-                        <div class="data-item"><span class="data-label">Religion</span><span
-                                class="data-value">{{ $employee->religion }}</span></div>
-                        <div class="data-item"><span class="data-label">Date, Place of Birth</span><span
-                                class="data-value">{{ $employee->birth_place }},
-                                {{ $employee->birth_date ? \Carbon\Carbon::parse($employee->birth_date)->format('d F Y') : '' }}</span>
-                        </div>
-                        <div class="data-item"><span class="data-label">Age</span><span
-                                class="data-value">{{ $age ? $age . ' Tahun' : 'N/A' }}</span></div>
-                        <div class="data-item">
-                            <span class="data-label">Marital Status</span><span
-                                class="data-value">{{ $employee->marital_status }}
-                                @if ($employee->marital_status !== 'Lajang')
-                                    @if ($employee->dependents == 0)
-                                        , Tidak ada tanggungan
-                                    @else
-                                        , {{ $employee->dependents }} Tanggungan
-                                    @endif
-                                @endif
-                            </span>
-                        </div>
-                        <div class="data-item"><span class="data-label">ID Card Address</span><span
-                                class="data-value">{{ $employee->ktp_address }}</span></div>
-                        <div class="data-item"><span class="data-label">Domicile Address</span><span
-                                class="data-value">{{ $employee->current_address }}</span></div>
-                        <div class="data-item"><span class="data-label">Email</span><span
-                                class="data-value">{{ $employee->email }}</span></div>
-                        <div class="data-item"><span class="data-label">Phone Number</span><span
-                                class="data-value">{{ $employee->phone_number }}</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Full-width Column for Collapsible Card -->
-        <div class="full-width-column">
-            <div class="detail-card collapsible-card">
-                <div class="card-header collapsible-header" data-bs-toggle="collapse" href="#healthHistoryCollapse"
-                    role="button" aria-expanded="false" aria-controls="healthHistoryCollapse">
-                    <h3 class="card-title"><i class="fas fa-heartbeat"></i> Health History</h3>
-                    <i class="fas fa-chevron-down collapse-icon"></i>
-                </div>
-                <div class="collapse" id="healthHistoryCollapse">
-                    <div class="card-content">
-                        @if ($healthRecord)
-                            <div class="data-item"><span class="data-label">Height</span><span
-                                    class="data-value">{{ $healthRecord->height ?? '-' }} cm</span></div>
-                            <div class="data-item"><span class="data-label">Weight</span><span
-                                    class="data-value">{{ $healthRecord->weight ?? '-' }} kg</span></div>
-                            <div class="data-item"><span class="data-label">Blood Type</span><span
-                                    class="data-value">{{ $healthRecord->blood_type ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Known Allergies</span><span
-                                    class="data-value">{{ $healthRecord->known_allergies ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Chronic Diseases</span><span
-                                    class="data-value">{{ $healthRecord->chronic_diseases ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Last Checkup Date</span><span
-                                    class="data-value">{{ $healthRecord->last_checkup_date ? \Carbon\Carbon::parse($healthRecord->last_checkup_date)->format('d F Y') : '-' }}</span>
-                            </div>
-                            <div class="data-item"><span class="data-label">Checkup Location</span><span
-                                    class="data-value">{{ $healthRecord->checkup_loc ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Checkup Price</span><span
-                                    class="data-value">{{ $healthRecord->price_last_checkup ? 'Rp ' . number_format($healthRecord->price_last_checkup, 0, ',', '.') : '-' }}</span>
-                            </div>
-                            <div class="data-item"><span class="data-label">Notes</span><span
-                                    class="data-value">{{ $healthRecord->notes ?? '-' }}</span></div>
-                        @else
-                            <p>No health history data available.</p>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Education History Collapsible Card -->
-        <div class="full-width-column">
-            <div class="detail-card collapsible-card">
-                <div class="card-header collapsible-header" data-bs-toggle="collapse" href="#educationHistoryCollapse"
-                    role="button" aria-expanded="false" aria-controls="educationHistoryCollapse">
-                    <h3 class="card-title"><i class="fas fa-user-graduate"></i> Education History</h3>
-                    <i class="fas fa-chevron-down collapse-icon"></i>
-                </div>
-                <div class="collapse" id="educationHistoryCollapse">
-                    <div class="card-content">
-                        @forelse ($educationHistories as $education)
-                            <div class="data-item"><span class="data-label">Level</span><span
-                                    class="data-value">{{ $education->education_level ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Institution</span><span
-                                    class="data-value">{{ $education->institution_name ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Address</span><span
-                                    class="data-value">{{ $education->institution_address ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Major</span><span
-                                    class="data-value">{{ $education->major ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Start Year</span><span
-                                    class="data-value">{{ $education->start_year ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">End Year</span><span
-                                    class="data-value">{{ $education->end_year ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">GPA/Score</span><span
-                                    class="data-value">{{ $education->gpa_or_score ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Certificate No.</span><span
-                                    class="data-value">{{ $education->certificate_number ?? '-' }}</span></div>
-                            <hr>
-                        @empty
-                            <p>No education history available.</p>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Family & Dependents Collapsible Card -->
-        <div class="full-width-column">
-            <div class="detail-card collapsible-card">
-                <div class="card-header collapsible-header" data-bs-toggle="collapse" href="#familyDependentsCollapse"
-                    role="button" aria-expanded="false" aria-controls="familyDependentsCollapse">
-                    <h3 class="card-title"><i class="fas fa-users"></i> Family & Dependents</h3>
-                    <i class="fas fa-chevron-down collapse-icon"></i>
-                </div>
-                <div class="collapse" id="familyDependentsCollapse">
-                    <div class="card-content">
-                        @forelse ($dependents as $dependent)
-                            <div class="data-item"><span class="data-label">Name</span><span
-                                    class="data-value">{{ $dependent->contact_name ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Relationship</span><span
-                                    class="data-value">{{ $dependent->relationship ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Phone</span><span
-                                    class="data-value">{{ $dependent->phone_number ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Address</span><span
-                                    class="data-value">{{ $dependent->address ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">City</span><span
-                                    class="data-value">{{ $dependent->city ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Province</span><span
-                                    class="data-value">{{ $dependent->province ?? '-' }}</span></div>
-                            <hr>
-                        @empty
-                            <p>No dependent data available.</p>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Certifications Collapsible Card -->
-        <div class="full-width-column">
-            <div class="detail-card collapsible-card">
-                <div class="card-header collapsible-header" data-bs-toggle="collapse" href="#certificationsCollapse"
-                    role="button" aria-expanded="false" aria-controls="certificationsCollapse">
-                    <h3 class="card-title"><i class="fas fa-certificate"></i> Certifications</h3>
-                    <i class="fas fa-chevron-down collapse-icon"></i>
-                </div>
-                <div class="collapse" id="certificationsCollapse">
-                    <div class="card-content">
-                        @forelse ($employee->certifications()->with('certificationMaterials')->latest()->get() as $certification)
-                            <div class="data-item"><span class="data-label">Name</span><span
-                                    class="data-value">{{ $certification->certification_name ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Issuer</span><span
-                                    class="data-value">{{ $certification->issuer ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Description</span><span
-                                    class="data-value">{{ $certification->description ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Date Obtained</span><span
-                                    class="data-value">{{ $certification->date_obtained ? \Carbon\Carbon::parse($certification->date_obtained)->format('d F Y') : '-' }}</span>
-                            </div>
-                            <div class="data-item"><span class="data-label">Expiry Date</span><span
-                                    class="data-value">{{ $certification->expiry_date ? \Carbon\Carbon::parse($certification->expiry_date)->format('d F Y') : '-' }}</span>
-                            </div>
-                            <div class="data-item"><span class="data-label">Cost</span><span
-                                    class="data-value">{{ $certification->cost ? 'Rp ' . number_format($certification->cost, 0, ',', '.') : '-' }}</span>
-                            </div>
-                            <div class="data-item">
-                                <span class="data-label">Certificate File</span>
-                                <span class="data-value">
-                                    @if ($certification->certificate_file)
-                                        <a href="{{ asset('storage/' . $certification->certificate_file) }}"
-                                            target="_blank">
-                                            <i class="fas fa-file-alt"></i>
-                                            {{ Str::afterLast($certification->certificate_file, '_') }}
-                                        </a>
-                                    @else
-                                        -
-                                    @endif
-                                </span>
-                            </div>
-                            <div class="data-item">
-                                <span class="data-label">Certification Materials</span>
-                                <span class="data-value">
-                                    @if ($certification->certificationMaterials && $certification->certificationMaterials->count())
-                                        <ul class="list-unstyled mb-0">
-                                            @foreach ($certification->certificationMaterials as $index => $material)
-                                                <li>
-                                                    <a href="{{ asset('storage/' . $material->file_path) }}"
-                                                        target="_blank">
-                                                        <i class="fas fa-file-alt"></i> 
-                                                        {{ Str::afterLast($material->file_path, '_') }}
-                                                    </a>
-                                                </li>
-                                            @endforeach
-                                        </ul>
-                                    @else
-                                        -
-                                    @endif
-                                </span>
-                            </div>
-                            <hr>
-                        @empty
-                            <p>No certifications available.</p>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Insurance Collapsible Card -->
-        <div class="full-width-column">
-            <div class="detail-card collapsible-card">
-                <div class="card-header collapsible-header" data-bs-toggle="collapse" href="#insuranceCollapse"
-                    role="button" aria-expanded="false" aria-controls="insuranceCollapse">
-                    <h3 class="card-title"><i class="fas fa-umbrella"></i> Insurance</h3>
-                    <i class="fas fa-chevron-down collapse-icon"></i>
-                </div>
-                <div class="collapse" id="insuranceCollapse">
-                    <div class="card-content">
-                        @forelse ($insurances as $insurance)
-                            <div class="data-item"><span class="data-label">Number</span><span
-                                    class="data-value">{{ $insurance->insurance_number ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Type</span><span
-                                    class="data-value">{{ $insurance->insurance_type ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Faskes Name</span><span
-                                    class="data-value">{{ $insurance->faskes_name ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Faskes Address</span><span
-                                    class="data-value">{{ $insurance->faskes_address ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Start Date</span><span
-                                    class="data-value">{{ $insurance->start_date ? \Carbon\Carbon::parse($insurance->start_date)->format('d F Y') : '-' }}</span>
-                            </div>
-                            <div class="data-item"><span class="data-label">Expiry Date</span><span
-                                    class="data-value">{{ $insurance->expiry_date ? \Carbon\Carbon::parse($insurance->expiry_date)->format('d F Y') : '-' }}</span>
-                            </div>
-                            <div class="data-item"><span class="data-label">Status</span><span
-                                    class="data-value">{{ $insurance->status ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Insurance File</span>
-                                <span class="data-value">
-                                    @if ($insurance->insurance_file)
-                                        <a href="{{ asset('storage/' . $insurance->insurance_file) }}" target="_blank">
-                                            <i class="fas fa-file-alt"></i> {{ basename($insurance->insurance_file) }}
-                                        </a>
-                                    @else
-                                        -
-                                    @endif
-                                </span>
-                            </div>
-                            <hr>
-                        @empty
-                            <p>No insurance data available.</p>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Work Experiences Collapsible Card -->
-        <div class="full-width-column">
-            <div class="detail-card collapsible-card">
-                <div class="card-header collapsible-header" data-bs-toggle="collapse" href="#workExperienceCollapse"
-                    role="button" aria-expanded="false" aria-controls="workExperienceCollapse">
-                    <h3 class="card-title"><i class="fas fa-briefcase"></i> Work Experiences</h3>
-                    <i class="fas fa-chevron-down collapse-icon"></i>
-                </div>
-                <div class="collapse" id="workExperienceCollapse">
-                    <div class="card-content">
-                        @forelse ($workExperiences as $work)
-                            <div class="data-item"><span class="data-label">Company Name</span><span
-                                    class="data-value">{{ $work->company_name ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Address</span><span
-                                    class="data-value">{{ $work->company_address ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Phone</span><span
-                                    class="data-value">{{ $work->company_phone ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Position</span><span
-                                    class="data-value">{{ $work->position_title ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Start</span><span
-                                    class="data-value">{{ $work->start_date ? \Carbon\Carbon::parse($work->start_date)->format('d F Y') : '-' }}</span>
-                            </div>
-                            <div class="data-item"><span class="data-label">End</span><span
-                                    class="data-value">{{ $work->end_date ? \Carbon\Carbon::parse($work->end_date)->format('d F Y') : '-' }}</span>
-                            </div>
-                            <div class="data-item"><span class="data-label">Responsibilities</span><span
-                                    class="data-value">{{ $work->responsibilities ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Reason to Leave</span><span
-                                    class="data-value">{{ $work->reason_to_leave ?? '-' }}</span></div>
-                            <div class="data-item"><span class="data-label">Last Salary</span><span
-                                    class="data-value">{{ $work->last_salary ? 'Rp ' . number_format($work->last_salary, 0, ',', '.') : '-' }}</span>
-                            </div>
-                            <div class="data-item"><span class="data-label">Reference Letter</span>
-                                <span class="data-value">
-                                    @if ($work->reference_letter_file)
-                                        <a href="{{ asset('storage/' . $work->reference_letter_file) }}" target="_blank">
-                                            <i class="fas fa-file-alt"></i> {{ basename($work->reference_letter_file) }}
-                                        </a>
-                                    @else
-                                        -
-                                    @endif
-                                </span>
-                            </div>
-                            <div class="data-item"><span class="data-label">Salary Slip</span>
-                                <span class="data-value">
-                                    @if ($work->salary_slip_file)
-                                        <a href="{{ asset('storage/' . $work->salary_slip_file) }}" target="_blank">
-                                            <i class="fas fa-file-alt"></i> {{ basename($work->salary_slip_file) }}
-                                        </a>
-                                    @else
-                                        -
-                                    @endif
-                                </span>
-                            </div>
-                            <hr>
-                        @empty
-                            <p>No work experience data available.</p>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Training Records Collapsible Card -->
-<div class="full-width-column">
-    <div class="detail-card collapsible-card">
-        <div class="card-header collapsible-header" data-bs-toggle="collapse" href="#trainingRecordsCollapse"
-            role="button" aria-expanded="false" aria-controls="trainingRecordsCollapse">
-            <h3 class="card-title"><i class="fas fa-chalkboard-teacher"></i> Training Records</h3>
-            <i class="fas fa-chevron-down collapse-icon"></i>
-        </div>
-        <div class="collapse" id="trainingRecordsCollapse">
-            <div class="card-content">
-                @forelse ($employee->trainingHistories()->with('trainingMaterials')->latest()->get() as $training)
-                    <div class="data-item">
-                        <span class="data-label">Training Name</span>
-                        <span class="data-value">{{ $training->training_name ?? '-' }}</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Provider</span>
-                        <span class="data-value">{{ $training->provider ?? '-' }}</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Description</span>
-                        <span class="data-value">{{ $training->description ?? '-' }}</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Start Date</span>
-                        <span class="data-value">
-                            {{ $training->start_date ? \Carbon\Carbon::parse($training->start_date)->format('d F Y') : '-' }}
-                        </span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">End Date</span>
-                        <span class="data-value">
-                            {{ $training->end_date ? \Carbon\Carbon::parse($training->end_date)->format('d F Y') : '-' }}
-                        </span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Cost</span>
-                        <span class="data-value">
-                            {{ $training->cost ? 'Rp ' . number_format($training->cost, 0, ',', '.') : '-' }}
-                        </span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Location</span>
-                        <span class="data-value">{{ $training->location ?? '-' }}</span>
-                    </div>
-
-                    {{-- Certificate File --}}
-                    <div class="data-item">
-                        <span class="data-label">Certificate File</span>
-                        <span class="data-value">
-                            @if (!empty($training->certificate_file))
-                                <a href="{{ asset('storage/' . $training->certificate_file) }}" target="_blank">
-                                    <i class="fas fa-file-pdf"></i> View Certificate
-                                </a>
-                            @else
-                                -
-                            @endif
-                        </span>
-                    </div>
-
-                    {{-- Training Materials --}}
-                    <div class="data-item">
-                        <span class="data-label">Training Materials</span>
-                        <span class="data-value">
-                            @if ($training->trainingMaterials && $training->trainingMaterials->count())
-                                <ul class="list-unstyled mb-0">
-                                    @foreach ($training->trainingMaterials as $index => $material)
-                                        <li>
-                                            <a href="{{ asset('storage/' . $material->file_path) }}"
-                                                target="_blank">
-                                                <i class="fas fa-file-alt"></i> File {{ $index + 1 }}
-                                            </a>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            @else
-                                -
-                            @endif
-                        </span>
-                    </div>
-                    <hr>
-                @empty
-                    <p>No training records available.</p>
-                @endforelse
-            </div>
-        </div>
+        <a href="{{ route('employees.edit', $employee) }}" class="btn btn-primary btn-sm shadow-sm mr-2">
+            <i class="fas fa-edit fa-sm text-white-50 mr-1"></i> Edit Data
+        </a>
+        
+        <a href="{{ route('employees.data.edit_login', $employee->id) }}" class="btn btn-info btn-sm shadow-sm">
+            <i class="fas fa-user-cog fa-sm text-white-50 mr-1"></i> Edit Login
+        </a>
     </div>
 </div>
 
+<div class="row">
 
-        {{-- Ikuti card kesehatan diatas untuk menerapkan expand card untuk menampilkan data lainnya --}}
+    <div class="col-lg-6">
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-briefcase mr-2"></i>Employment Data</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless table-sm m-0">
+                    <tr>
+                        <th style="width: 40%">Status</th>
+                        <td>
+                            @if ($employee->status == 'Aktif')
+                                <span class="badge badge-success px-2">Active</span>
+                            @else
+                                <span class="badge badge-secondary px-2">Inactive</span>
+                            @endif
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Type</th>
+                        <td>{{ $employee->employee_type }}</td>
+                    </tr>
+                    <tr>
+                        <th>Division</th>
+                        <td>{{ $employee->division->name ?? 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Position</th>
+                        <td>{{ $employee->position->title ?? 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Office</th>
+                        <td>{{ $employee->office }}</td>
+                    </tr>
+                    <tr>
+                        <th>Date of Entry</th>
+                        <td>{{ $employee->hire_date ? \Carbon\Carbon::parse($employee->hire_date)->format('d F Y') : '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Exit Date</th>
+                        <td>{{ $employee->separation_date ? \Carbon\Carbon::parse($employee->separation_date)->format('d F Y') : '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>CV File</th>
+                        <td>
+                            @if ($employee->cv_file)
+                                <a href="{{ asset('storage/' . $employee->cv_file) }}" target="_blank" class="btn btn-sm btn-light border">
+                                    <i class="fas fa-file-pdf text-danger mr-1"></i> View CV
+                                </a>
+                            @else
+                                <span class="text-muted small">Not uploaded</span>
+                            @endif
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-user-lock mr-2"></i>Login Account Data</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless table-sm m-0">
+                    <tr>
+                        <th style="width: 40%">Username</th>
+                        <td>{{ $employee->user->name ?? 'Not Connected' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email</th>
+                        <td>{{ $employee->user->email ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Role</th>
+                        <td><span class="badge badge-info">{{ $employee->user->role ?? '-' }}</span></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
     </div>
+
+    <div class="col-lg-6">
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-id-card mr-2"></i>Personal Data</h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <img class="img-profile rounded-circle border shadow-sm" 
+                         style="width: 120px; height: 120px; object-fit: cover;"
+                         src="{{ $employee->photo ? asset('storage/' . $employee->photo) : 'https://placehold.co/120x120/4e73df/ffffff?text=' . strtoupper(substr($employee->full_name, 0, 1)) }}">
+                </div>
+                <table class="table table-borderless table-sm">
+                    <tr>
+                        <th style="width: 40%">Full Name</th>
+                        <td class="font-weight-bold text-gray-800">{{ $employee->full_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>NIK</th>
+                        <td>{{ $employee->nik }}</td>
+                    </tr>
+                    <tr>
+                        <th>NIP</th>
+                        <td>{{ $employee->nip ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>NPWP</th>
+                        <td>{{ $employee->npwp ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Gender</th>
+                        <td>{{ $employee->gender }}</td>
+                    </tr>
+                    <tr>
+                        <th>Religion</th>
+                        <td>{{ $employee->religion }}</td>
+                    </tr>
+                    <tr>
+                        <th>Birth Info</th>
+                        <td>{{ $employee->birth_place }}, {{ $employee->birth_date ? \Carbon\Carbon::parse($employee->birth_date)->format('d F Y') : '' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Age</th>
+                        <td>{{ $age ? $age . ' Years' : 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Marital Status</th>
+                        <td>
+                            {{ $employee->marital_status }}
+                            <small class="text-muted d-block">
+                                @if ($employee->marital_status !== 'Lajang')
+                                    ({{ $employee->dependents == 0 ? 'No dependents' : $employee->dependents . ' Dependents' }})
+                                @endif
+                            </small>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>KTP Address</th>
+                        <td>{{ $employee->ktp_address }}</td>
+                    </tr>
+                    <tr>
+                        <th>Domicile</th>
+                        <td>{{ $employee->current_address }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email (Personal)</th>
+                        <td>{{ $employee->email }}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone</th>
+                        <td>{{ $employee->phone_number }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="row">
+    <div class="col-12">
+
+        <div class="card shadow mb-4">
+            <a href="#healthCollapse" class="d-block card-header py-3" data-toggle="collapse" role="button" aria-expanded="true" aria-controls="healthCollapse">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-heartbeat mr-2"></i>Health History</h6>
+            </a>
+            <div class="collapse" id="healthCollapse">
+                <div class="card-body">
+                    @if ($healthRecord)
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-sm table-borderless">
+                                    <tr><th width="40%">Height</th><td>{{ $healthRecord->height ?? '-' }} cm</td></tr>
+                                    <tr><th>Weight</th><td>{{ $healthRecord->weight ?? '-' }} kg</td></tr>
+                                    <tr><th>Blood Type</th><td>{{ $healthRecord->blood_type ?? '-' }}</td></tr>
+                                    <tr><th>Allergies</th><td>{{ $healthRecord->known_allergies ?? '-' }}</td></tr>
+                                    <tr><th>Chronic Diseases</th><td>{{ $healthRecord->chronic_diseases ?? '-' }}</td></tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-sm table-borderless">
+                                    <tr><th width="40%">Last Checkup</th><td>{{ $healthRecord->last_checkup_date ? \Carbon\Carbon::parse($healthRecord->last_checkup_date)->format('d F Y') : '-' }}</td></tr>
+                                    <tr><th>Location</th><td>{{ $healthRecord->checkup_loc ?? '-' }}</td></tr>
+                                    <tr><th>Price</th><td>{{ $healthRecord->price_last_checkup ? 'Rp ' . number_format($healthRecord->price_last_checkup, 0, ',', '.') : '-' }}</td></tr>
+                                    <tr><th>Notes</th><td>{{ $healthRecord->notes ?? '-' }}</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    @else
+                        <div class="text-center py-3 text-muted">No health history data available.</div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4">
+            <a href="#eduCollapse" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button" aria-expanded="false" aria-controls="eduCollapse">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-user-graduate mr-2"></i>Education History</h6>
+            </a>
+            <div class="collapse" id="eduCollapse">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Level</th>
+                                    <th>Institution</th>
+                                    <th>Major</th>
+                                    <th>Year</th>
+                                    <th>GPA</th>
+                                    <th>Certificate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($educationHistories as $edu)
+                                    <tr>
+                                        <td>{{ $edu->education_level }}</td>
+                                        <td>
+                                            <div class="font-weight-bold">{{ $edu->institution_name }}</div>
+                                            <small>{{ $edu->institution_address }}</small>
+                                        </td>
+                                        <td>{{ $edu->major }}</td>
+                                        <td>{{ $edu->start_year }} - {{ $edu->end_year }}</td>
+                                        <td>{{ $edu->gpa_or_score }}</td>
+                                        <td>{{ $edu->certificate_number ?? '-' }}</td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="6" class="text-center text-muted">No education data available.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4">
+            <a href="#familyCollapse" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button" aria-expanded="false" aria-controls="familyCollapse">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-users mr-2"></i>Family & Dependents</h6>
+            </a>
+            <div class="collapse" id="familyCollapse">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Relationship</th>
+                                    <th>Phone</th>
+                                    <th>Address</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($dependents as $fam)
+                                    <tr>
+                                        <td>{{ $fam->contact_name }}</td>
+                                        <td><span class="badge badge-info">{{ $fam->relationship }}</span></td>
+                                        <td>{{ $fam->phone_number }}</td>
+                                        <td>{{ $fam->address }}, {{ $fam->city }}, {{ $fam->province }}</td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="4" class="text-center text-muted">No family data available.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4">
+            <a href="#workCollapse" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button" aria-expanded="false" aria-controls="workCollapse">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-briefcase mr-2"></i>Work Experience</h6>
+            </a>
+            <div class="collapse" id="workCollapse">
+                <div class="card-body">
+                     @forelse ($workExperiences as $work)
+                        <div class="border-bottom pb-3 mb-3">
+                            <div class="d-flex justify-content-between">
+                                <h5 class="font-weight-bold text-gray-800">{{ $work->company_name }}</h5>
+                                <small class="text-muted">{{ $work->start_date ? \Carbon\Carbon::parse($work->start_date)->format('M Y') : '' }} - {{ $work->end_date ? \Carbon\Carbon::parse($work->end_date)->format('M Y') : 'Present' }}</small>
+                            </div>
+                            <div class="mb-2">
+                                <span class="badge badge-primary">{{ $work->position_title }}</span>
+                                <span class="text-muted small ml-2"><i class="fas fa-map-marker-alt"></i> {{ $work->company_address }}</span>
+                            </div>
+                            <p class="mb-1 small"><strong>Responsibilities:</strong> {{ $work->responsibilities }}</p>
+                            
+                            <div class="mt-2">
+                                @if ($work->reference_letter_file)
+                                    <a href="{{ asset('storage/' . $work->reference_letter_file) }}" target="_blank" class="btn btn-sm btn-outline-secondary mr-1">
+                                        <i class="fas fa-file-alt"></i> Reference Letter
+                                    </a>
+                                @endif
+                                @if ($work->salary_slip_file)
+                                    <a href="{{ asset('storage/' . $work->salary_slip_file) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-file-invoice-dollar"></i> Salary Slip
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-center text-muted">No work experience available.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4">
+            <a href="#trainingCollapse" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button" aria-expanded="false" aria-controls="trainingCollapse">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-chalkboard-teacher mr-2"></i>Training History</h6>
+            </a>
+            <div class="collapse" id="trainingCollapse">
+                <div class="card-body">
+                    @forelse ($employee->trainingHistories()->with('trainingMaterials')->latest()->get() as $training)
+                        <div class="border-left-primary pl-3 mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h5 class="font-weight-bold text-primary mb-0">{{ $training->training_name }}</h5>
+                                <span class="small text-gray-500">
+                                    {{ $training->start_date ? \Carbon\Carbon::parse($training->start_date)->format('d M Y') : '' }} - 
+                                    {{ $training->end_date ? \Carbon\Carbon::parse($training->end_date)->format('d M Y') : '' }}
+                                </span>
+                            </div>
+                            <div class="text-muted mb-2">
+                                <strong>Provider:</strong> {{ $training->provider }} | 
+                                <strong>Location:</strong> {{ $training->location }} |
+                                <strong>Cost:</strong> {{ $training->cost ? 'Rp ' . number_format($training->cost, 0, ',', '.') : '-' }}
+                            </div>
+                            <p class="small mb-2">{{ $training->description }}</p>
+                            
+                            <div class="d-flex flex-wrap gap-2">
+                                @if ($training->certificate_file)
+                                    <a href="{{ asset('storage/' . $training->certificate_file) }}" target="_blank" class="btn btn-sm btn-success mr-2 mb-1">
+                                        <i class="fas fa-certificate"></i> Certificate
+                                    </a>
+                                @endif
+                                
+                                @if ($training->trainingMaterials && $training->trainingMaterials->count())
+                                    @foreach ($training->trainingMaterials as $matIndex => $material)
+                                        <a href="{{ asset('storage/' . $material->file_path) }}" target="_blank" class="btn btn-sm btn-info mr-2 mb-1">
+                                            <i class="fas fa-file-download"></i> Material {{ $matIndex + 1 }}
+                                        </a>
+                                    @endforeach
+                                @endif
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-center text-muted">No training history available.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4">
+            <a href="#certCollapse" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button" aria-expanded="false" aria-controls="certCollapse">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-certificate mr-2"></i>Certifications</h6>
+            </a>
+            <div class="collapse" id="certCollapse">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Issuer</th>
+                                    <th>Date Obtained</th>
+                                    <th>Expiry</th>
+                                    <th>Files</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($employee->certifications as $cert)
+                                    <tr>
+                                        <td>{{ $cert->certification_name }}</td>
+                                        <td>{{ $cert->issuer }}</td>
+                                        <td>{{ $cert->date_obtained ? \Carbon\Carbon::parse($cert->date_obtained)->format('d M Y') : '-' }}</td>
+                                        <td>
+                                            @if($cert->expiry_date)
+                                                {{ \Carbon\Carbon::parse($cert->expiry_date)->format('d M Y') }}
+                                            @else
+                                                <span class="badge badge-success">No Expiry</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($cert->certificate_file)
+                                                <a href="{{ asset('storage/' . $cert->certificate_file) }}" target="_blank" class="text-decoration-none">
+                                                    <i class="fas fa-file-alt"></i> View
+                                                </a>
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="5" class="text-center text-muted">No certifications recorded.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4">
+             <a href="#insuranceCollapse" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button" aria-expanded="false" aria-controls="insuranceCollapse">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-file-medical-alt mr-2"></i>Insurance</h6>
+            </a>
+            <div class="collapse" id="insuranceCollapse">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Number</th>
+                                    <th>Type</th>
+                                    <th>Faskes</th>
+                                    <th>Validity</th>
+                                    <th>File</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($insurances as $ins)
+                                    <tr>
+                                        <td class="font-weight-bold">{{ $ins->insurance_number }}</td>
+                                        <td>{{ $ins->insurance_type }}</td>
+                                        <td>
+                                            {{ $ins->faskes_name }}<br>
+                                            <small class="text-muted">{{ $ins->faskes_address }}</small>
+                                        </td>
+                                        <td>
+                                            {{ $ins->start_date ? \Carbon\Carbon::parse($ins->start_date)->format('d/m/y') : '...' }} - 
+                                            {{ $ins->expiry_date ? \Carbon\Carbon::parse($ins->expiry_date)->format('d/m/y') : '...' }}
+                                        </td>
+                                        <td>
+                                            @if($ins->insurance_file)
+                                                <a href="{{ asset('storage/' . $ins->insurance_file) }}" target="_blank">
+                                                    <i class="fas fa-file-contract"></i>
+                                                </a>
+                                            @else - @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="5" class="text-center text-muted">No insurance data found.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
 @endsection
 
-@push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    {{-- <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const collapseEl = document.getElementById('healthHistoryCollapse');
-            collapseEl.addEventListener('show.bs.collapse', function () {
-                var icon = this.previousElementSibling.querySelector('.collapse-icon');
-                icon.classList.remove('fa-chevron-down');
-                icon.classList.add('fa-chevron-up');
-            });
-            collapseEl.addEventListener('hide.bs.collapse', function () {
-                var icon = this.previousElementSibling.querySelector('.collapse-icon');
-                icon.classList.remove('fa-chevron-up');
-                icon.classList.add('fa-chevron-down');
-            });
-        });
-    </script> --}}
+@push('js')
+<script>
+    $(document).ready(function(){
+        if(window.location.hash){
+            $(window.location.hash).collapse('show');
+        }
+    });
+</script>
 @endpush

@@ -1,85 +1,105 @@
 @extends('layouts.admin')
 
-@section('title', 'Employee Information')
-@section('header_icon', 'icon-park-outline--file-staff-one-01')
-@section('content_header', 'Employee Information')
+@section('title', 'Edit Work Experience')
 
-@push('styles')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ asset('css/form-health.css') }}">
-    <style>
-        @media (max-width: 768px) {
-            .form-buttons-container {
-                flex-direction: column-reverse;
-                gap: 15px;
-            }
+@section('content')
 
-            .btn-submit,
-            .btn-cancel,
-            .btn-delete {
-                width: 100%;
-                max-width: 100%;
-            }
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+        <i class="fas fa-edit fa-fw mr-2"></i>Edit Work Experience
+    </h1>
+    <a href="{{ route('employees.work-experience.index', $employee->id) }}" class="btn btn-secondary btn-sm shadow-sm">
+        <i class="fas fa-arrow-left fa-sm text-white-50 mr-1"></i> Back to List
+    </a>
+</div>
 
-            .btn-submit {
-                margin-left: 0px;
-            }
-        }
-    </style>
-@endpush
+@include('employees.partials.tab-menu', ['employee' => $employee])
 
-@section('content-wrapper')
-    @include('employees.partials.tab-menu', ['employee' => $employee])
-    <section class="content">
-        <div class="container-fluid">
-            <div class="form-content-container">
-                <div class="card-body">
+<div class="card shadow mb-4 border-top-0" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+    <div class="card-body">
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <ul class="mb-0 pl-3">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
-                    {{-- Form Update --}}
-                    <form id="updateForm"
-                        action="{{ route('employees.work-experience.update', [$employee, $workExperience]) }}" method="POST"
-                        enctype="multipart/form-data">
-                        @csrf
-                        @method('PUT')
+        <form id="updateForm" action="{{ route('employees.work-experience.update', [$employee->id, $workExperience->id]) }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            @method('PUT')
 
-                        @include('employees.data.work-experience._form', ['workExperience' => $workExperience])
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <h6 class="heading-small text-muted mb-4">Experience Details</h6>
+                    
+                    @include('employees.data.work-experience._form', ['workExperience' => $workExperience])
 
-                        {{-- Action Buttons --}}
-                        <div class="form-buttons-container mt-4">
-                            <button type="button" class="btn btn-delete"
-                                onclick="showDeleteModal('work-experience-{{ $workExperience->id }}')">
-                                Delete
+                    <hr class="mt-5">
+                    <div class="row">
+                        <div class="col-12 d-flex justify-content-between">
+                            <button type="button" class="btn btn-danger" onclick="showDeleteModal('work-experience-{{ $workExperience->id }}')">
+                                <i class="fas fa-trash mr-1"></i> Delete Experience
                             </button>
-                            <a href="{{ route('employees.work-experience.index', $employee) }}" class="btn btn-cancel">
-                                Cancel
-                            </a>
-                            <button type="submit" form="updateForm" class="btn btn-submit">
-                                Submit
-                            </button>
+
+                            <div>
+                                <a href="{{ route('employees.work-experience.index', $employee->id) }}" class="btn btn-secondary mr-2">Cancel</a>
+                                <button type="submit" class="btn btn-primary px-4">Update Changes</button>
+                            </div>
                         </div>
-                    </form>
-
-                    {{-- Modal Delete --}}
-                    <x-delete-modal modalId="work-experience-{{ $workExperience->id }}"
-                        :action="route('employees.work-experience.destroy', [$employee, $workExperience])"
-                        message="Are you sure to delete this Work Experience?" />
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </form>
+    </div>
+</div>
+
+<x-delete-modal modalId="work-experience-{{ $workExperience->id }}"
+    :action="route('employees.work-experience.destroy', [$employee->id, $workExperience->id])"
+    message="Are you sure you want to delete this Work Experience?" />
+
 @endsection
 
-@push('scripts')
+@push('js')
+    <script src="https://cdn.jsdelivr.net/npm/cleave.js@1.6.0/dist/cleave.min.js"></script>
     <script>
-        // Disable submit button on form submission
-        document.getElementById('updateForm').addEventListener('submit', function (e) {
-            console.log('Form submitted with method: PUT');
-            console.log('Form data:', new FormData(this));
-            const submitButton = this.querySelector('button[type="submit"]');
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.innerText = 'Saving...';
+        document.addEventListener('DOMContentLoaded', function() {
+            const formattedInput = document.getElementById('formatted_salary');
+            const rawInput = document.getElementById('raw_salary');
+
+            if (formattedInput && rawInput) {
+                const cleave = new Cleave(formattedInput, {
+                    numeral: true,
+                    numeralThousandsGroupStyle: 'thousand',
+                    numeralDecimalMark: ',',
+                    delimiter: '.',
+                    numeralDecimalScale: 2,
+                    rawValueTrimPrefix: true,
+                });
+
+                if(rawInput.value) {
+                    cleave.setRawValue(rawInput.value);
+                }
+
+                formattedInput.addEventListener('input', function() {
+                    rawInput.value = cleave.getRawValue();
+                });
             }
+
+            $('.custom-file-input').on('change', function() {
+                let fileName = $(this).val().split('\\').pop();
+                $(this).next('.custom-file-label').addClass("selected").html(fileName);
+            });
+
+            document.getElementById('updateForm').addEventListener('submit', function() {
+                let btn = this.querySelector('button[type="submit"]');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Updating...';
+                }
+            });
         });
     </script>
 @endpush

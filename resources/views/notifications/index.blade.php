@@ -2,52 +2,70 @@
 
 @section('title', 'Notifications')
 
-@section('content_header')
-    <div class="header-with-icon d-flex align-items-center">
-        <svg xmlns="http://www.w3.org/2000/svg" 
-             width="24" height="24" viewBox="0 0 24 24" 
-             class="mr-2" fill="currentColor">
-            <path d="M10 21h4a2 2 0 0 1-4 0m9-6V11a7 7 0 0 0-5-6.71V4a2 2 0 1 0-4 0v.29
-                     A7 7 0 0 0 5 11v4l-1.29 1.29A1 1 0 0 0 4 18h16a1 1 0 0 0 .71-1.71Z"/>
-        </svg>
-        <h1 class="header-title mb-0">Notifications</h1>
-    </div>
-@endsection
-
 @section('content')
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h3 class="card-title">Your Notifications</h3>
-        <form action="{{ route('notifications.readAll') }}" method="POST">
-            @csrf
-            <button class="btn btn-sm btn-primary">Mark all as read</button>
-        </form>
-    </div>
-    <div class="card-body">
-        <ul class="list-group">
-            @forelse($notifications as $notification)
-                <li class="list-group-item d-flex justify-content-between align-items-start 
-                           {{ $notification->read_at ? '' : 'font-weight-bold' }}">
-                    <div>
-                        {{-- 🔗 Jika notifikasi punya URL, klik langsung tandai read --}}
-                        @if(isset($notification->data['url']))
-                            <a href="{{ route('notifications.redirect', ['id' => $notification->id]) }}"
-                               class="text-dark">
-                                {!! $notification->data['message'] !!}
-                            </a>
-                        @else
-                            {{ $notification->data['message'] }}
-                        @endif
 
-                        <small class="text-muted d-block">
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+        <i class="fas fa-bell fa-fw mr-2"></i>Notifications
+    </h1>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">Your Notifications</h6>
+        @if($notifications->isNotEmpty())
+            <form action="{{ route('notifications.readAll') }}" method="POST">
+                @csrf
+                <button class="btn btn-sm btn-primary shadow-sm">
+                    <i class="fas fa-check-double fa-sm text-white-50 mr-1"></i> Mark all as read
+                </button>
+            </form>
+        @endif
+    </div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            @forelse($notifications as $notification)
+                <div class="list-group-item list-group-item-action flex-column align-items-start {{ $notification->read_at ? 'bg-light' : '' }}">
+                    <div class="d-flex w-100 justify-content-between">
+                        <div class="mb-1">
+                            @if(isset($notification->data['url']))
+                                <a href="{{ route('notifications.redirect', ['id' => $notification->id]) }}" 
+                                   class="text-decoration-none {{ $notification->read_at ? 'text-secondary' : 'text-primary font-weight-bold' }}">
+                                   <i class="fas fa-circle fa-xs mr-2 {{ $notification->read_at ? 'text-gray-400' : 'text-primary' }}"></i>
+                                   {!! $notification->data['message'] !!}
+                                </a>
+                            @else
+                                <span class="{{ $notification->read_at ? 'text-secondary' : 'text-dark font-weight-bold' }}">
+                                    <i class="fas fa-circle fa-xs mr-2 {{ $notification->read_at ? 'text-gray-400' : 'text-primary' }}"></i>
+                                    {!! $notification->data['message'] !!}
+                                </span>
+                            @endif
+                        </div>
+                        <small class="text-muted ml-2 text-nowrap">
+                            <i class="far fa-clock mr-1"></i>
                             {{ $notification->created_at->diffForHumans() }}
                         </small>
                     </div>
-                </li>
+                </div>
             @empty
-                <li class="list-group-item">No notifications found.</li>
+                <div class="text-center py-5 text-muted">
+                    <div class="mb-3">
+                        <span class="fa-stack fa-2x">
+                            <i class="fas fa-circle fa-stack-2x text-gray-200"></i>
+                            <i class="fas fa-bell-slash fa-stack-1x text-gray-400"></i>
+                        </span>
+                    </div>
+                    <p class="mb-0">No notifications found.</p>
+                </div>
             @endforelse
-        </ul>
+        </div>
     </div>
+    
+    @if(method_exists($notifications, 'links'))
+        <div class="card-footer">
+            {{ $notifications->links() }}
+        </div>
+    @endif
 </div>
+
 @endsection

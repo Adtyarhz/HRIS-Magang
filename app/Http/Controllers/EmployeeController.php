@@ -101,7 +101,6 @@ class EmployeeController extends Controller
             'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'division_id' => 'nullable|exists:divisions,id',
             'position_id' => 'nullable|exists:positions,id',
-            'user_id' => 'nullable|unique:employees,user_id|exists:users,id',
         ]);
 
         //-- APPROVAL LOGIC START --//
@@ -221,14 +220,6 @@ class EmployeeController extends Controller
             $validatedData['division_id'] = $position?->division_id;
         }
 
-        //-- APPROVAL (HC) --//
-        if ($user->role === 'hc') {
-            $tempEmployee = clone $employee;
-            $tempEmployee->fill($validatedData);
-            ApprovalWorkflowService::captureModelChange($user, $tempEmployee, 'update');
-            return redirect()->route('employees.show', $employee->id)->with('success', 'Permintaan perubahan data telah dikirim untuk approval.');
-        }
-
         try {
             DB::beginTransaction();
 
@@ -288,23 +279,6 @@ class EmployeeController extends Controller
                 $careerType = 'Mutasi';
             }
 
-            if ($careerType) {
-                $activeCareer = CareerHistory::where('employee_id', $employee->id)->whereNull('end_date')->first();
-                if ($activeCareer) {
-                    $activeCareer->update(['end_date' => Carbon::today()]);
-                }
-                CareerHistory::create([
-                    'employee_id' => $employee->id,
-                    'position_id' => $newPosition?->id,
-                    'division_id' => $newDivision,
-                    'employee_type' => $newType,
-                    'start_date' => Carbon::today(),
-                    'end_date' => null,
-                    'type' => $careerType,
-                    'notes' => '',
-                ]);
-            }
-
             DB::commit();
             return redirect()->route('employees.show', $employee->id)->with('success', 'Employee data updated successfully.');
         } catch (\Exception $e) {
@@ -318,13 +292,6 @@ class EmployeeController extends Controller
      */
     public function destroy(Employee $employee)
     {
-        //-- APPROVAL LOGIC START --//
-        if (Auth::user()->role === 'hc') {
-            ApprovalWorkflowService::captureModelChange(Auth::user(), $employee, 'delete');
-            return redirect()->route('employees.index')->with('success', 'Permintaan penghapusan karyawan telah dikirim untuk approval.');
-        }
-        //-- APPROVAL LOGIC END --//
-
         // Alur asli untuk superadmin
         try {
             DB::beginTransaction();
@@ -382,33 +349,6 @@ class EmployeeController extends Controller
             ->orderBy('name')
             ->get();
         return view('employees.data.edit', compact('employee', 'divisions', 'positions', 'users'));
-    }
-    public function convert($id)
-    {
-        $applicant = Applicant::findOrFail($id);
-        $offeringLetter = $applicant->recruitmentProgresses()
-            ->where('stage', 'offering_letter')
-            ->where('offering_status', 'accepted')
-            ->latest('created_at')
-            ->first();
-        if (!$offeringLetter) {
-            return redirect()->back()->with('error', 'Applicant cannot be converted to employee because the offering letter is not accepted.');
-        }
-        $contractMap = [
-            'Contract' => 'PKWT',
-            'Internship' => 'Intern',
-            'Probation' => 'Probation',
-            'Full-time' => 'PKWTT',
-        ];
-        $mappedContractType = $contractMap[$offeringLetter->contract_type] ?? null;
-        return view('employees.data.create', [
-            'applicant' => $applicant,
-            'offeringLetter' => $offeringLetter,
-            'mappedContractType' => $mappedContractType,
-            'divisions' => Division::all(),
-            'positions' => Position::all(),
-            'users' => User::all(),
-        ]);
     }
 }
 

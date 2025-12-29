@@ -1,64 +1,94 @@
 @extends('layouts.admin')
 
-@section('title', 'Employee Information')
-@section('header_icon', 'icon-park-outline--file-staff-one-01')
-@section('content_header', 'Employee Information')
+@section('title', 'Add Work Experience')
 
-@push('styles')
-    <link rel="stylesheet" href="{{ asset('css/form-health.css') }}">
-    <style>
-        @media (max-width: 768px) {
-            .form-buttons-container {
-                flex-direction: column-reverse;
-                gap: 15px;
-            }
+@section('content')
 
-            .btn-submit,
-            .btn-cancel {
-                width: 100%;
-                max-width: 100%;
-            }
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+        <i class="fas fa-briefcase fa-fw mr-2"></i>Add Work Experience
+    </h1>
+    <a href="{{ route('employees.show', $employee->id) }}" class="btn btn-secondary btn-sm shadow-sm">
+        <i class="fas fa-arrow-left fa-sm text-white-50 mr-1"></i> Back to Detail
+    </a>
+</div>
 
-            .btn-submit {
-                margin-left: 0;
-            }
-        }
-    </style>
-@endpush
+@include('employees.partials.tab-menu', ['employee' => $employee])
 
-@section('content-wrapper')
-    @include('employees.partials.tab-menu', ['employee' => $employee])
-    <section class="content">
-        <div class="container-fluid">
-            <div class="form-content-container">
-                <div class="card-body">
-                    {{-- Error Message --}}
-                    @if ($errors->any())
-                        <div class="alert alert-danger">
-                            <ul class="mb-0 ps-3">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
+<div class="card shadow mb-4 border-top-0" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+    <div class="card-body">
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <ul class="mb-0 pl-3">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <form action="{{ route('employees.work-experience.store', $employee->id) }}" method="POST" enctype="multipart/form-data" id="createForm">
+            @csrf
+
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <h6 class="heading-small text-muted mb-4">Experience Details</h6>
+                    
+                    @include('employees.data.work-experience._form', ['workExperience' => null])
+
+                    <hr class="mt-5">
+                    <div class="row">
+                        <div class="col-12 text-right">
+                            <a href="{{ route('employees.work-experience.index', $employee->id) }}" class="btn btn-secondary mr-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-4">Submit Experience</button>
                         </div>
-                    @endif
-
-                    <form action="{{ route('employees.work-experience.store', $employee) }}" method="POST"
-                        enctype="multipart/form-data">
-                        @csrf
-
-                        {{-- ⛳ Ini WAJIB: kirim nilai null ke partial --}}
-                        @include('employees.data.work-experience._form', ['workExperience' => null])
-
-                        {{-- ✅ Tombol di kanan bawah --}}
-                        <div class="form-buttons-container mt-4">
-                            <a href="{{ route('employees.work-experience.index', $employee) }}"
-                                class="btn btn-cancel">Cancel</a>
-                            <button type="submit" class="btn btn-submit">Submit</button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </form>
+    </div>
+</div>
+
 @endsection
+
+@push('js')
+    <script src="https://cdn.jsdelivr.net/npm/cleave.js@1.6.0/dist/cleave.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const formattedInput = document.getElementById('formatted_salary');
+            const rawInput = document.getElementById('raw_salary');
+
+            if (formattedInput && rawInput) {
+                const cleave = new Cleave(formattedInput, {
+                    numeral: true,
+                    numeralThousandsGroupStyle: 'thousand',
+                    numeralDecimalMark: ',',
+                    delimiter: '.',
+                    numeralDecimalScale: 2,
+                    rawValueTrimPrefix: true,
+                });
+
+                if(rawInput.value) {
+                    cleave.setRawValue(rawInput.value);
+                }
+
+                formattedInput.addEventListener('input', function() {
+                    rawInput.value = cleave.getRawValue();
+                });
+            }
+
+            $('.custom-file-input').on('change', function() {
+                let fileName = $(this).val().split('\\').pop();
+                $(this).next('.custom-file-label').addClass("selected").html(fileName);
+            });
+
+            document.getElementById('createForm').addEventListener('submit', function() {
+                let btn = this.querySelector('button[type="submit"]');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saving...';
+                }
+            });
+        });
+    </script>
+@endpush
